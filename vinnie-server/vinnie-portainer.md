@@ -93,7 +93,7 @@ Or go to 'Networks' in portainer and add a network called 'traefik_proxy' while 
 
 Go to 'Stacks' in portainer, click add stack, select 'git repository', 
 
-fill in **name** `vinnie_server_stack`
+fill in **name** `traefik_stack`
 
 **repository url** in this case is `https://github.com/hasosoft/dockers/`
 
@@ -124,3 +124,42 @@ Use compose to run portainer `docker-compose up -d` -->
 Navigate to x.x.x.x:8080 in a browser and see if it works, it should show you a dashboard and should display some charts.
 
 If you go to HTTP -> Routers, it should display `whoami` as the service running on the `websecure` entrypoint. You can verify it's running correctly by navigating to the https domain eg. https://traefik.harro.dev and it should show a text based webpage showing information about the webrequest. SSL certificate should be automatically pulled and applied by Traefik.
+
+# Nextcloud
+<!-- https://techrevelations.de/2019/11/10/nextcloud-and-traefik-v2/ -->
+<!-- https://github.com/cbirkenbeul/docker-homelab/blob/master/nextcloud/docker-compose.yaml -->
+
+## Add network for nextcloud
+`docker network create nextcloud_backend`
+
+## Deploy Nextcloud stack in portainer
+
+### Via github
+
+Go to 'Stacks' in portainer, click add stack, select 'git repository', 
+
+fill in **name** `nextcloud_stack`
+
+**repository url** in this case is `https://github.com/hasosoft/dockers/`
+
+**reference** is `refs/head/vinnie-server` since it's on that 'branch'
+
+**compose path** is `vinnie-server/nextcloud/docker-compose.yml` since it is in that folder.
+
+**authentication** shouldn't be necessary unless it is in a private repository
+
+### Via compose file
+
+Navigate to `cd ~/dockers/vinnie-server/nextcloud/`
+
+Copy the contest of the `docker-compose.yml`  file (eg. `cat docker-compose.yml`)
+
+Go to 'Stacks' in portainer, click add stack, and paste the contents of the nextcloud/docker-compose.yml file into the web editor.
+
+<!-- ## Start Nextcloud (docker-compose fallback)
+
+**don't use this if you set it up with portainer**
+
+Navigate to `cd ~/dockers/vinnie-server/nextcloud/`
+
+Use compose to run portainer `docker-compose up -d` -->

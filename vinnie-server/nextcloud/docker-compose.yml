@@ -1,14 +1,66 @@
-  labels:
-  - "traefik.enable=true"
-  - "traefik.port=80"
-  - "traefik.http.routers.cloud.entrypoints=websecure"
-  - "traefik.http.routers.cloud.rule=Host(`yourhostname`)"
-  - "traefik.http.routers.cloud.tls.certresolver=mytlschallenge"
-  - "traefik.http.routers.cloud.middlewares=cloud@docker"
-  - "traefik.docker.network=webproxy"
-  - "traefik.http.middlewares.cloud.headers.customFrameOptionsValue=SAMEORIGIN"
-  - "traefik.http.middlewares.cloud.headers.framedeny=true"
-  - "traefik.http.middlewares.cloud.headers.sslredirect=true"
-  - "traefik.http.middlewares.cloud.headers.stsIncludeSubdomains=true"
-  - "traefik.http.middlewares.cloud.headers.stsPreload=true"
-  - "traefik.http.middlewares.cloud.headers.stsSeconds=15552000"
+version: '2'
+
+services: 
+  nextcloud-database:
+    image: mariadb
+    container_name: nextcloud-database
+    command: --transaction-isolation=READ-COMMITTED --log-bin=ROW
+    restart: always
+    volumes:
+      - /var/docker/nextcloud/database:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=randompasswordhere #EDIT
+      - MYSQL_PASSWORD=randompasswordhere #EDIT
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_INITDB_SKIP_TZINFO=1
+    networks:
+      - backend
+    logging:
+      options:
+        max-size: '12m'
+        max-file: '5'
+      driver: json-file
+  nextcloud-app:
+    image: nextcloud:latest
+    container_name: nextcloud-app
+    restart: unless-stopped
+    volumes: 
+      - /var/docker/nextcloud/app:/var/www/html
+    links:
+      - nextcloud-database
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.middlewares.nextcloud-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.nextcloud-http.entrypoints=web"
+      - "traefik.http.routers.nextcloud-http.rule=Host(`nextcloud.example.com`)" #Domain anpassen
+      - "traefik.http.routers.nextcloud-http.middlewares=nextcloud-https@docker"
+      - "traefik.http.routers.nextcloud.entrypoints=web-secure"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.example.com`)" #Domain anpassen
+      - "traefik.http.routers.nextcloud.tls=true"
+      - "traefik.http.routers.nextcloud.tls.certresolver=default"
+      - "traefik.http.routers.nextcloud.middlewares=secHeadersNextcloud@file, nextcloud-dav@docker"
+      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
+      # Middleware cloud-dav replaces .well-known paths for caldav and carddav with proper nextcloud path
+      - "traefik.http.middlewares.cloud-dav.replacepathregex.regex=^/.well-known/ca(l|rd)dav"
+      - "traefik.http.middlewares.cloud-dav.replacepathregex.replacement=/remote.php/dav/"
+    networks:
+      - traefik_proxy
+      - backend
+    # If you like to bypass traefik, then uncomment these two lines. Nextcloud will then be available on port 80
+    # Remember to allow the port temporarily on your firewall: sudo firewall-cmd --zone=public --add-port=80/tcp
+    #ports:
+    #  - "8081:80"
+    logging:
+      options:
+        max-size: '12m'
+        max-file: '5'
+      driver: json-file
+    
+networks:
+  traefik_proxy: # this is the network provided by traefik
+    external:
+      name: traefik_proxy
+  backend: # this network is part of the nextcloud stack
+    external:
+      name: nextcloud_backend

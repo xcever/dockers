@@ -69,6 +69,30 @@ Navigate to portainer compose folder `cd ~/dockers/vinnie-server/portainer/`
 
 Use compose to run portainer `docker-compose up -d`
 
+Navigate to x.x.x.x:9000 in a browser, set up password, connect portainer to 'Local'
+
 # Traefik
 <!-- https://techrevelations.de/2019/11/10/nextcloud-and-traefik-v2/ -->
 <!-- https://www.smarthomebeginner.com/traefik-reverse-proxy-tutorial-for-docker/ -->
+
+## Add network for traefik
+
+`docker network create traefik_proxy`
+
+Or go to 'Networks' in portainer and add a network called 'traefik_proxy' while leaving the rest on default
+
+## Start Traefik, make sure it works (portainer)
+
+Navigate to `cd ~/dockers/vinnie-server/traefik/`
+
+Copy the contest of the `docker-compose.yml`  file (eg. `cat docker-compose.yml`)
+
+Go to 'Stacks' in portainer, click add stack, and paste the contents of the traefik/docker-compose.yml file into the web editor.
+
+## Start Traefik, make sure it works (docker-compose fallback)
+
+Navigate to `cd ~/dockers/vinnie-server/traefik/`
+
+Use compose to run portainer `docker-compose up -d`
+
+Navigate to x.x.x.x:8080 in a browser and see if it works

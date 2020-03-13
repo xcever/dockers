@@ -1,0 +1,22 @@
+version: "3"
+ 
+services:
+  portainer:
+    restart: unless-stopped
+    image: portainer/portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data    
+    networks:
+      - web
+    labels:
+      - traefik.docker.network=web
+      # setup host (eg traefik.harro.dev)
+      - traefik.frontend.rule=Host:portainer.example.tech
+      - traefik.port=9000
+      - traefik.backend=portainer
+    # command: -H unix:///var/run/docker.sock
+ 
+networks:
+  web:
+    external: true

@@ -1,0 +1,52 @@
+version: "3.3"
+services:
+  traefik:
+    image: "traefik:latest"
+    container_name: "traefik2"
+    command:
+      #- "--log.level=DEBUG"
+      # disable api.insecure if running on production
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      #- "--certificatesresolvers.mytlschallenge.acmbuge.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      # fill out acme registration email here
+      - "--certificatesresolvers.mytlschallenge.acme.email=***youremail@here***"
+      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    ports:
+      #http
+      - "80:80"
+      #https
+      - "443:443"
+      #traefik management port
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    networks:
+      - traefik_proxy
+      - default
+    logging:
+      options:
+        max-size: '12m'
+        max-file: '5'
+      driver: json-file
+  # test service
+  whoami:
+    image: "containous/whoami"
+    container_name: "simple-service"
+    labels:
+      - "traefik.enable=true"
+      # insert hostname here (eg traefik.harro.dev)
+      - "traefik.http.routers.whoami.rule=Host(`***hostname here*`)"
+      - "traefik.http.routers.whoami.entrypoints=websecure"
+      - "traefik.http.routers.whoami.tls.certresolver=mytlschallenge"
+networks:
+  traefik_proxy:
+    external:
+      name: traefik_proxy
+  default:
+    driver: bridge

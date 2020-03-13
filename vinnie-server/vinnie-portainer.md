@@ -25,6 +25,19 @@
 
 `sudo usermod -aG docker ${USER}`
 
+<!-- https://github.com/MatchbookLab/local-persist -->
+## Install local-persistant storage driver 
+
+`curl -fsSL https://raw.githubusercontent.com/MatchbookLab/local-persist/master/scripts/install.sh | sudo bash`
+
+## Create storage volumes for Docker
+
+`docker volume create -d local-persist -o mountpoint=/mnt/media/pictures --name=pictures`
+
+`docker volume create -d local-persist -o mountpoint=/mnt/media/movies --name=movies`
+
+`docker volume create -d local-persist -o mountpoint=/mnt/media/music --name=music`
+
 # Docker Compose
 <!-- https://github.com/docker/compose -->
 
@@ -46,26 +59,11 @@ Navigate to `dockers/vinnie-server`
 
 `docker volume create portainer_data`
 
-<!-- https://github.com/MatchbookLab/local-persist -->
-## Install local-persistant storage driver 
+## Add network for portainer to connect externally
 
-`curl -fsSL https://raw.githubusercontent.com/MatchbookLab/local-persist/master/scripts/install.sh | sudo bash`
-
-
-
-## Create storage volumes for Docker
-
-`docker volume create -d local-persist -o mountpoint=/mnt/media/pictures --name=pictures`
-
-`docker volume create -d local-persist -o mountpoint=/mnt/media/movies --name=movies`
-
-`docker volume create -d local-persist -o mountpoint=/mnt/media/music --name=music`
+`docker network create web`
 
 ## Start portainer, make sure it works
-
-`docker run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer`
-
-Check if it works, set up password. After check the process with `docker ps` and kill it with `docker stop {container name}` and remove it with `docker container rm {container name}`
 
 Navigate to portainer compose folder `cd ~/dockers/vinnie-server/portainer/`
 

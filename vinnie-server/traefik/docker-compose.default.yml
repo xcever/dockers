@@ -15,6 +15,7 @@ services:
       #- "--certificatesresolvers.mytlschallenge.acmbuge.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
       # fill out acme registration email here
       - "--certificatesresolvers.mytlschallenge.acme.email=***youremail@here***"
+      # cert info is going to end up in the letsencrypt folder inside the current traefik directory
       - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
     ports:
       #http

@@ -5,7 +5,7 @@ services:
     container_name: "traefik2"
     command:
       #- "--log.level=DEBUG"
-      - "--api.insecure=true"
+      #- "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
@@ -21,6 +21,13 @@ services:
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels: 
+      # middleware redirect
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      # global redirect to https
+      - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.redirs.entrypoints=web"
+      - "traefik.http.routers.redirs.middlewares=redirect-to-https"
     networks:
       - traefik_proxy
       - default
@@ -31,12 +38,14 @@ services:
       driver: json-file
   whoami:
     image: "containous/whoami"
-    container_name: "simple-service"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.whoami.rule=Host(`traefik.harro.dev`)"
       - "traefik.http.routers.whoami.entrypoints=websecure"
       - "traefik.http.routers.whoami.tls.certresolver=mytlschallenge"
+      - "traefik.http.routers.whoami.tls=true"
+      - "traefik.http.routers.whoami.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.users=user:$2y$10$oQeoHo1YqgxaaYigY6fQce4RLapRjAP2RXSbBO6DgunqXKOjfDNk."
 networks:
   traefik_proxy:
     external:

@@ -5,9 +5,10 @@ services:
     container_name: "traefik2"
     command:
       #- "--log.level=DEBUG"
-      #- "--api.insecure=true"
+      - "--api.insecure=true"
+      #- "--api"
       - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+      # - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
@@ -22,8 +23,17 @@ services:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     labels: 
+      # Dashboard
+      # - "traefik.http.routers.traefik.rule=Host(`traefik.harro.dev`)"
+      # - "traefik.http.routers.traefik.service=api@internal"
+      # - "traefik.http.routers.traefik.tls.certresolver=mytlschallenge"
+      # - "traefik.http.routers.traefik.entrypoints=websecure"
+      # - "traefik.http.routers.traefik.middlewares=authtraefik"
+      # - "traefik.http.middlewares.authtraefik.basicauth.users=admin:$$2y$$10$$R1j6FOThtn.40i4DNsyiK.4xUhjJOWbxuch0tBI4hNOnJyydwrjoK" # user/password
+
       # middleware redirect
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
       # global redirect to https
       - "traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)"
       - "traefik.http.routers.redirs.entrypoints=web"
@@ -40,7 +50,7 @@ services:
     image: "containous/whoami"
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.whoami.rule=Host(`traefik.harro.dev`)"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.harro.dev`)"
       - "traefik.http.routers.whoami.entrypoints=websecure"
       - "traefik.http.routers.whoami.tls.certresolver=mytlschallenge"
       - "traefik.http.routers.whoami.tls=true"
@@ -52,3 +62,8 @@ networks:
       name: traefik_proxy
   default:
     driver: bridge
+
+# To switch from local dashboard to webdash
+# Comment in command "--api.insecure=true" and in ports - "8080:8080"
+# Uncomment the lines under #Dashboard in labels, make sure the host points to the correct (sub)domain
+# Uncomment "--api" in command

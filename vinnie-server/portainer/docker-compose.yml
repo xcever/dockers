@@ -1,4 +1,4 @@
-version: "3"
+version: "2"
  
 services:
   portainer:
@@ -6,7 +6,7 @@ services:
     image: portainer/portainer
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data    
+      - portainer_data:/data
     networks:
       - web
     labels:

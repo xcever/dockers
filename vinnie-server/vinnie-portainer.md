@@ -32,6 +32,13 @@
 
 `sudo chmod +x /usr/local/bin/docker-compose`
 
+## download compose files from repository
+Navigate to home directory `cd ~`
+
+`git clone -b vinnie-server https://github.com/hasosoft/dockers.git`
+
+Navigate to `dockers/vinnie-server`
+
 # Portainer
 <!-- https://clouding.io/kb/en-us/articles/360010398219-Install-Portainer-on-Ubuntu-18-04 -->
 
@@ -54,9 +61,15 @@
 
 `docker volume create -d local-persist -o mountpoint=/mnt/media/music --name=music`
 
-## Start portainer, make sure it restarts on reboot
+## Start portainer, make sure it works
 
-`docker run -d --restart unless-stopped -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer`
+`docker run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer`
+
+Check if it works, set up password. After check the process with `docker ps` and kill it with `docker stop {container name}` and remove it with `docker container rm {container name}`
+
+Navigate to portainer compose folder `cd ~/dockers/vinnie-server/portainer/`
+
+Use compose to run portainer `docker-compose up -d`
 
 # Traefik
 <!-- https://techrevelations.de/2019/11/10/nextcloud-and-traefik-v2/ -->

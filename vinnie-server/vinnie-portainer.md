@@ -41,7 +41,7 @@
 # Docker Compose
 <!-- https://github.com/docker/compose -->
 
-```sudo curl -L https://github.com/docker/compose/releases/download/1.25.4/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose```
+```sudo curl -L https://github.com/docker/compose/releases/download/1.26.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose```
 
 `sudo chmod +x /usr/local/bin/docker-compose`
 
@@ -93,11 +93,11 @@ Or go to 'Networks' in portainer and add a network called 'traefik_proxy' while 
 
 Go to 'Stacks' in portainer, click add stack, select 'git repository', 
 
-fill in **name** `traefik_stack`
+fill in **name** `traefikstack`
 
 **repository url** in this case is `https://github.com/hasosoft/dockers/`
 
-**reference** is `refs/head/vinnie-server` since it's on that 'branch'
+**reference** is `refs/heads/vinnie-server` since it's on that 'branch'
 
 **compose path** is `vinnie-server/traefik/docker-compose.yml` since it is in that folder.
 
@@ -138,11 +138,11 @@ If you go to HTTP -> Routers, it should display `whoami` as the service running 
 
 Go to 'Stacks' in portainer, click add stack, select 'git repository', 
 
-fill in **name** `nextcloud_stack`
+fill in **name** `nextcloudstack`
 
 **repository url** in this case is `https://github.com/hasosoft/dockers/`
 
-**reference** is `refs/head/vinnie-server` since it's on that 'branch'
+**reference** is `refs/heads/vinnie-server` since it's on that 'branch'
 
 **compose path** is `vinnie-server/nextcloud/docker-compose.yml` since it is in that folder.
 
@@ -163,3 +163,44 @@ Go to 'Stacks' in portainer, click add stack, and paste the contents of the next
 Navigate to `cd ~/dockers/vinnie-server/nextcloud/`
 
 Use compose to run portainer `docker-compose up -d` -->
+
+## Setting up nextcloud
+
+If you set `NEXTCLOUD_UPDATE=` to `0` instead of 1 you get the option to set up nextcloud by using the web interface. 
+
+Navigate to either the hostname set in the nextcloud/docker-compose.yml or the local IP address.
+
+Fill in username/password as you like, then expand 'Storage & database' select MySQL/MariaDB and make sure you fill in the following:
+
+- Database user: nextcloud
+- Database password: the MYSQL_ROOT_PASSWORD from the mariadb env
+- Database name: nextcloud
+- localhost: replace with 'nextcloud-mariadb' or whatever your nextcloud database container is called
+
+It should look like this: 
+
+![nextcloud setup](https://github.com/hasosoft/dockers/raw/vinnie-server/vinnie-server/nextcloud/nextcloud-setup.png)
+
+Next if you did the setup from your hostname, you will notice that you get a connection refused error, to fix this the domain has to be added to the ['trusted-domains'](https://docs.nextcloud.com/server/19/admin_manual/installation/installation_wizard.html#trusted-domains) list.
+
+The `docker-compose.yml` file contains an `NEXTCLOUD_TRUSTED_DOMAINS=` entry but that seems to be ignored when running through the nextcloud installer.
+
+To fix this you need to edit `/var/docker/nextcloud/app/config/config.php` and modify 
+```  
+'trusted_domains' =>
+  array (
+    0 => 'x.x.x.x',
+  ),
+```
+to contain your hostname and or local ip like
+
+```
+  'trusted_domains' =>
+  array (
+    0 => '10.0.0.201 local ip address',
+    1 => 'nextcloud.harro.dev',
+  ),
+
+```
+
+This step is also useful when getting general untrusted domain and connection refused errors.

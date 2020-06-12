@@ -1,56 +1,87 @@
 version: '2'
 
-services: 
-  nextcloud-database:
-    image: mariadb
-    container_name: nextcloud-database
+services:
+  nextcloud-mariadb:
+    image: mariadb:latest
+    container_name: nextcloud-mariadb
     command: --transaction-isolation=READ-COMMITTED --log-bin=ROW
+    networks:
+      - backend
     restart: always
     volumes:
-      - /var/docker/nextcloud/database:/var/lib/mysql
+      - /var/docker/nextcloud/mariadb:/var/lib/mysql      
     environment:
       - MYSQL_ROOT_PASSWORD=randompasswordhere #EDIT
       - MYSQL_PASSWORD=randompasswordhere #EDIT
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
-      - MYSQL_INITDB_SKIP_TZINFO=1
-    networks:
-      - backend
+      - MYSQL_INITDB_SKIP_TZINFO=1   
     logging:
       options:
         max-size: '12m'
         max-file: '5'
       driver: json-file
+    labels:
+      - "traefik.enable=false"
+  nextcloud-redis:
+    image: redis:latest
+    container_name: nextcloud-redis
+    networks:
+      - backend
+    restart: always
+    volumes:
+      - /var/docker/nextcloud/redis:/data
+    labels:
+      - "traefik.enable=false"
   nextcloud-app:
     image: nextcloud:latest
     container_name: nextcloud-app
     restart: unless-stopped
     volumes: 
       - /var/docker/nextcloud/app:/var/www/html
+      - pictures:/mnt/media/pictures
+      - movies:/mnt/media/movies
+      - music:/mnt/media/music
+    environment:
+      - REDIS_HOST=nextcloud-redis
+      - NEXTCLOUD_TRUSTED_DOMAINS=nextcloud.harro.dev 172.16.0.0/12 #EDIT
+      - MYSQL_PASSWORD=randompasswordhere #EDIT
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=nextcloud-mariadb
+      - NEXTCLOUD_ADMIN_USER=nextcloud
+      - NEXTCLOUD_ADMIN_PASSWORD=randompasswordhere #EDIT
+      - NEXTCLOUD_UPDATE=1
+      - APACHE_DISABLE_REWRITE_IP=1
+      - TRUSTED_PROXIES=172.16.0.0/12
+    depends_on:
+      - nextcloud-mariadb
+      - nextcloud-redis      
     links:
-      - nextcloud-database
+      - nextcloud-mariadb
+      - nextcloud-redis
     labels:
       - "traefik.enable=true"
+      - "traefik.http.middlewares.nextcloud-caldav.redirectregex.permanent=true"
+      - "traefik.http.middlewares.nextcloud-caldav.redirectregex.regex=^https://(.*)/.well-known/(card|cal)dav"
+      - "traefik.http.middlewares.nextcloud-caldav.redirectregex.replacement=https://$${1}/remote.php/dav/"
       - "traefik.http.middlewares.nextcloud-https.redirectscheme.scheme=https"
       - "traefik.http.routers.nextcloud-http.entrypoints=web"
-      - "traefik.http.routers.nextcloud-http.rule=Host(`nextcloud.example.com`)" #Domain anpassen
+      - "traefik.http.routers.nextcloud-http.rule=Host(`nextcloud.harro.dev`)" #EDIT
       - "traefik.http.routers.nextcloud-http.middlewares=nextcloud-https@docker"
-      - "traefik.http.routers.nextcloud.entrypoints=web-secure"
-      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.example.com`)" #Domain anpassen
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.harro.dev`)" #EDIT
+      - "traefik.http.routers.nextcloud.middlewares=nextcloud-caldav@docker"
       - "traefik.http.routers.nextcloud.tls=true"
-      - "traefik.http.routers.nextcloud.tls.certresolver=default"
-      - "traefik.http.routers.nextcloud.middlewares=secHeadersNextcloud@file, nextcloud-dav@docker"
-      - "traefik.http.services.nextcloud.loadbalancer.server.port=80"
-      # Middleware cloud-dav replaces .well-known paths for caldav and carddav with proper nextcloud path
-      - "traefik.http.middlewares.cloud-dav.replacepathregex.regex=^/.well-known/ca(l|rd)dav"
-      - "traefik.http.middlewares.cloud-dav.replacepathregex.replacement=/remote.php/dav/"
+      - "traefik.http.routers.nextcloud.tls.certresolver=mytlschallenge"
+      - "traefik.docker.network=traefik_proxy"
     networks:
       - traefik_proxy
       - backend
     # If you like to bypass traefik, then uncomment these two lines. Nextcloud will then be available on port 80
     # Remember to allow the port temporarily on your firewall: sudo firewall-cmd --zone=public --add-port=80/tcp
-    #ports:
-    #  - "8081:80"
+    ports:
+      - "8081:80"
     logging:
       options:
         max-size: '12m'
@@ -64,3 +95,17 @@ networks:
   backend: # this network is part of the nextcloud stack
     external:
       name: nextcloud_backend
+
+volumes: 
+  pictures: 
+    driver: local-persist
+    driver_opts: 
+      mountpoint: /mnt/media/pictures
+  movies:
+    driver: local-persist
+    driver_opts: 
+      mountpoint: /mnt/media/movies
+  music:
+    driver: local-persist
+    driver_opts: 
+      mountpoint: /mnt/media/music
